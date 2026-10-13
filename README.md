@@ -30,6 +30,8 @@ PORT=3000
 CLIENT_ORIGINS=http://localhost:5173
 AUTH_DB_URI=postgresql://user:password@localhost:5432/database
 BETTER_AUTH_SECRET=replace-with-a-long-random-secret
+DATABASE_URL=postgresql://prisma.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
+DATABASE_DIRECT_URL=postgresql://prisma.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres
 ```
 
 | Variable | Required | Default / validation | Purpose |
@@ -38,6 +40,8 @@ BETTER_AUTH_SECRET=replace-with-a-long-random-secret
 | `PORT` | No | `3000`; coerced to an integer | HTTP server port. |
 | `BETTER_AUTH_SECRET` | Yes | Must be a non-empty string | Secret used by Better Auth. |
 | `AUTH_DB_URI` | Yes | Must be a non-empty string | PostgreSQL connection string used by authentication. |
+| `DATABASE_URL` | Yes | Must be a non-empty string | Prisma runtime connection string. For Supabase, use the transaction pooler URL (`:6543`) and append `?pgbouncer=true`. |
+| `DATABASE_DIRECT_URL` | Yes | Must be a non-empty string | Prisma CLI connection string for migrations/introspection. For Supabase, use session pooler (`:5432`) or a direct DB host URL. |
 | `CLIENT_ORIGINS` | No | `http://localhost:3000`; each parsed entry must be a URL | Allowed CORS origins. Use a comma-separated list, for example `http://localhost:5173,https://app.example.com`. Square brackets around the list are also accepted. |
 
 The environment is parsed and validated at startup. `CLIENT_ORIGINS` is transformed into an array of origins before it is passed to the credentialed CORS middleware. Do not commit real credentials or secrets.

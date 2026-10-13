@@ -10,7 +10,7 @@ const envs = {
 
 const path = (
     [
-        ...(envs[process.env.NODE_ENV as keyof typeof envs] ?? []),
+        ...(envs[(process.env.NODE_ENV || 'development') as keyof typeof envs] ?? []),
         '',
     ]
         .map((name) => (name ? `.env.${name}` : '.env'))
@@ -40,6 +40,10 @@ const envSchema = z.object({
                 .map((origin) => origin.trim()),
         )
         .pipe(z.array(z.url())),
+
+    DATABASE_URL: z
+        .string()
+        .min(1, 'DATABASE_URL is required'),
 
 });
 
