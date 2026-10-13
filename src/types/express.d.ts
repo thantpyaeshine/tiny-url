@@ -1,8 +1,12 @@
 import type { NextFunction as ExpressNextFunction, Request as ExpressRequest, Response as ExpressResponse } from "express";
 import type { ValidationChain } from 'express-validator';
+import type { Models } from '../prisma/contract.d';
 
 export type Request = ExpressRequest &
 {
+    url?: string;
+    slug?: string;
+    link?: Models.public_Link;
     /* Custom properties for the request object */
 };
 
