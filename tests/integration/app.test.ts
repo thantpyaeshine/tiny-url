@@ -99,6 +99,14 @@ describe('Express app link route integration', () => {
         });
     });
 
+    it('serves the homepage', async () => {
+        const response = await fetch(baseUrl);
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('content-type')).toContain('text/html');
+        await expect(response.text()).resolves.toContain('<title>Tiny URL</title>');
+    });
+
     it('creates a slug for a new URL', async () => {
         const response = await fetch(baseUrl, {
             method: 'POST',

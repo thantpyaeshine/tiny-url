@@ -60,7 +60,7 @@ flowchart LR
 - `DATABASE_URL` is required and supplies the PostgreSQL ORM client. `REDIS_URI` is optional in the environment schema; ensure Redis is reachable because the client connects during startup.
 - `PORT` defaults to `3000`. `NODE_ENV` defaults to `development` and accepts `development`, `production`, or `test`.
 - The environment loader selects `.env.dev`, `.env.development`, or `.env.local` for development; `.env.prod` or `.env.production` for production; and `.env.test` for tests. Each list falls back to `.env`. Selection uses the process value before dotenv loads; if it is unset or unrecognized, only `.env` is checked.
-- `package.json` declares `"type": "module"`. `npm run build` runs `tsc` followed by `tsc-alias --resolve-full-paths`, which rewrites aliases and adds `.js` extensions to resolvable extensionless imports in emitted files. This makes the output compatible with native Node.js ESM resolution.
+- `package.json` declares `"type": "module"`. `npm run build` runs `tsc` followed by `tsc-alias --resolve-full-paths`, which rewrites aliases and adds `.js` extensions to resolvable extensionless imports in emitted files, then copies the homepage HTML beside the compiled controller. This makes the output compatible with native Node.js ESM resolution and keeps the homepage available in the build.
 - `npm run dev` runs `tsx watch src/index.ts`. `npm start` builds the app and starts `dist/src/index.js` with `NODE_ENV=production`.
 
 ## Tests and Delivery

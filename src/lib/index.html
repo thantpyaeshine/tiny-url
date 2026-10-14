@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f3f7f4">
+	<title>Tiny URL</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--ink: #1b302c;
+			--muted: #61716b;
+			--paper: #f3f7f4;
+			--surface: #ffffff;
+			--line: #d5e0da;
+			--accent: #b94d2e;
+			--accent-hover: #963c24;
+			--success: #17634c;
+			--error: #a23830;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			color: var(--ink);
+			background-color: var(--paper);
+			background-image: radial-gradient(#cbd8d0 0.7px, transparent 0.7px);
+			background-size: 22px 22px;
+			font-family: Georgia, 'Times New Roman', serif;
+		}
+
+		main {
+			display: grid;
+			min-height: 100vh;
+			padding: 32px 20px;
+			place-items: center;
+		}
+
+		.tool {
+			width: min(100%, 560px);
+			padding: 36px;
+			border: 1px solid var(--line);
+			border-top: 4px solid var(--accent);
+			border-radius: 8px;
+			background: var(--surface);
+			box-shadow: 0 18px 50px rgb(27 48 44 / 7%);
+		}
+
+		.brand {
+			margin: 0 0 30px;
+			color: var(--muted);
+			font-family: 'Courier New', monospace;
+			font-size: 13px;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		h1 {
+			margin: 0 0 28px;
+			font-size: 36px;
+			font-weight: 500;
+			line-height: 1.1;
+		}
+
+		label {
+			display: block;
+			margin-bottom: 9px;
+			color: var(--muted);
+			font-family: 'Courier New', monospace;
+			font-size: 13px;
+		}
+
+		.form-row {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 10px;
+		}
+
+		input,
+		button {
+			min-height: 50px;
+			border-radius: 4px;
+			font: inherit;
+		}
+
+		input {
+			width: 100%;
+			min-width: 0;
+			padding: 0 14px;
+			border: 1px solid var(--line);
+			color: var(--ink);
+			background: var(--surface);
+			font-family: 'Courier New', monospace;
+			font-size: 14px;
+		}
+
+		input:focus-visible,
+		button:focus-visible,
+		a:focus-visible {
+			outline: 3px solid #e2a58f;
+			outline-offset: 3px;
+		}
+
+		button {
+			padding: 0 19px;
+			border: 0;
+			color: #fff;
+			background: var(--accent);
+			cursor: pointer;
+			font-family: 'Courier New', monospace;
+			font-size: 14px;
+			font-weight: 700;
+		}
+
+		button:hover:not(:disabled) {
+			background: var(--accent-hover);
+		}
+
+		button:disabled {
+			cursor: wait;
+			opacity: 0.7;
+		}
+
+		.result {
+			min-height: 24px;
+			margin: 20px 0 0;
+			overflow-wrap: anywhere;
+			font-family: 'Courier New', monospace;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+
+		.result[data-state='success'] {
+			color: var(--success);
+		}
+
+		.result[data-state='error'] {
+			color: var(--error);
+		}
+
+		.result a {
+			display: block;
+			margin-top: 4px;
+			color: inherit;
+			font-weight: 700;
+		}
+
+		@media (max-width: 480px) {
+			.tool {
+				padding: 28px 22px;
+			}
+
+			h1 {
+				font-size: 32px;
+			}
+
+			.form-row {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<section class="tool" aria-labelledby="title">
+			<p class="brand">Tiny URL</p>
+			<h1 id="title">Shorten a link</h1>
+			<form id="shorten-form">
+				<label for="url">Web address</label>
+				<div class="form-row">
+					<input
+						id="url"
+						name="url"
+						type="url"
+						placeholder="https://example.com/page"
+						autocomplete="url"
+						required
+					>
+					<button type="submit">Shorten</button>
+				</div>
+			</form>
+			<p class="result" id="result" role="status" aria-live="polite"></p>
+		</section>
+	</main>
+	<script>
+		const form = document.querySelector('#shorten-form');
+		const input = document.querySelector('#url');
+		const button = form.querySelector('button');
+		const result = document.querySelector('#result');
+		const apiRoot = window.location.protocol === 'file:'
+			? 'http://localhost:3000/'
+			: new URL('/', window.location.href).href;
+
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			result.replaceChildren();
+			result.removeAttribute('data-state');
+			button.disabled = true;
+			button.textContent = 'Working...';
+
+			try {
+				const response = await fetch(apiRoot, {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ url: input.value.trim() }),
+				});
+				const body = await response.json();
+
+				if (!response.ok) {
+					const message = body.errors?.[0]?.msg || body.message;
+					throw new Error(message || 'Could not shorten this link.');
+				}
+
+				if (typeof body.slug !== 'string') {
+					throw new Error('The server returned an invalid link.');
+				}
+
+				const shortUrl = new URL(body.slug, apiRoot);
+				result.dataset.state = 'success';
+				result.append('Your short link:');
+				const link = document.createElement('a');
+				link.href = shortUrl.href;
+				link.target = '_blank';
+				link.rel = 'noopener noreferrer';
+				link.textContent = shortUrl.href;
+				result.append(link);
+			}
+			catch (error) {
+				result.dataset.state = 'error';
+				result.textContent = error instanceof Error
+					? error.message
+					: 'Could not reach the server.';
+			}
+			finally {
+				button.disabled = false;
+				button.textContent = 'Shorten';
+			}
+		});
+	</script>
+</body>
+</html>

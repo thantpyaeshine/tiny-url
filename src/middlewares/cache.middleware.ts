@@ -16,7 +16,7 @@ export const cache: Middleware = handle(
 
         const cached = await getCache(hash);
 
-        if (cached) {
+        if (cached && cached.status >= 200 && cached.status < 400) {
             return res.status(cached.status).json(cached.data);
         }
 
