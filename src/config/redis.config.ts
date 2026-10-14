@@ -1,10 +1,10 @@
+import ENV from '@config/env';
 import { createClient } from 'redis';
-import ENV from '@config/env'
 
-const { REDIS_URI } = ENV;
+const { REDIS_URL } = ENV;
 
 const redis = createClient({
-    url: REDIS_URI,
+    url: REDIS_URL,
     RESP: 2,
 });
 

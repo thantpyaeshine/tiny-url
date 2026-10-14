@@ -16,7 +16,7 @@ describe('generateId', () => {
 
         expect(ids).toHaveLength(50);
         expect(ids.every((id) => Number.isInteger(id))).toBe(true);
-        expect(ids.every((id) => id >= 1_000_000_000 && id < 2_000_000_000)).toBe(
+        expect(ids.every((id) => Number(id) >= 1_000_000_000 && Number(id) < 2_000_000_000)).toBe(
             true,
         );
     });

@@ -64,6 +64,11 @@ jest.unstable_mockModule('@/prisma/db', () => ({
     },
 }));
 
+jest.unstable_mockModule('@/redis/cache', () => ({
+    getCache: async () => null,
+    setCache: async () => {},
+}));
+
 const appModulePath = '@/app';
 const { default: app } = await import(appModulePath);
 
@@ -101,7 +106,7 @@ describe('Express app link route integration', () => {
             body: JSON.stringify({ url: 'https://example.com' }),
         });
 
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         await expect(response.json()).resolves.toEqual({ slug: '15FTGg' });
     });
 
@@ -118,7 +123,7 @@ describe('Express app link route integration', () => {
             body: JSON.stringify({ url: 'https://example.com' }),
         });
 
-        expect(duplicate.status).toBe(200);
+        expect(duplicate.status).toBe(201);
         await expect(duplicate.json()).resolves.toEqual({ slug: '15FTGg' });
     });
 

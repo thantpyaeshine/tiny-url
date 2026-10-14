@@ -1,6 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-const first = jest.fn();
+type LinkRecord = {
+    slug: string;
+    url?: string;
+};
+
+const first = jest.fn<() => Promise<LinkRecord | null>>();
 
 jest.unstable_mockModule('express-validator', () => ({
     matchedData: jest.fn((request: { __matchedData?: Record<string, unknown> }) =>
@@ -21,6 +26,7 @@ describe('link middleware', () => {
         first.mockResolvedValueOnce({ slug: 'existing-slug' });
 
         const response = {
+            status: jest.fn().mockReturnThis(),
             json: jest.fn(),
         };
         const next = jest.fn();
@@ -32,6 +38,7 @@ describe('link middleware', () => {
         );
 
         expect(Link.where).toHaveBeenCalledWith({ url: 'example.com' });
+        expect(response.status).toHaveBeenCalledWith(201);
         expect(response.json).toHaveBeenCalledWith({ slug: 'existing-slug' });
         expect(next).not.toHaveBeenCalled();
     });

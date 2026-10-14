@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-const update = jest.fn(async () => 1);
+const update = jest.fn(async (_data: { slug: string }) => 1);
 
 jest.unstable_mockModule('@/lib/util', () => ({
     generateId: () => 1234,
@@ -22,6 +22,7 @@ const { Link } = await import('@/prisma/db');
 describe('link controller', () => {
     it('creates a link, stores its slug, and returns it', async () => {
         const response = {
+            status: jest.fn().mockReturnThis(),
             json: jest.fn(),
         };
 
@@ -36,6 +37,7 @@ describe('link controller', () => {
             url: 'example.com',
         });
         expect(update).toHaveBeenCalledWith({ slug: 'jU' });
+        expect(response.status).toHaveBeenCalledWith(201);
         expect(response.json).toHaveBeenCalledWith({ slug: 'jU' });
     });
 
