@@ -8,6 +8,7 @@ const envs = {
     test: ['test'],
 } as const satisfies Record<string, readonly string[]>;
 
+
 const path = (
     [
         ...(envs[(process.env.NODE_ENV || 'development') as keyof typeof envs] ?? []),
@@ -26,7 +27,7 @@ const envSchema = z.object({
 
     PORT: z.coerce.number().int().default(3000),
 
-    REDIS_URI: z.string().min(1, 'REDIS_URI is required'),
+    REDIS_URI: z.string().min(1, 'REDIS_URI is required').optional(),
 
     DATABASE_URL: z
         .string()

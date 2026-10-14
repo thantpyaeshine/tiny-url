@@ -22,7 +22,7 @@ These standards describe how to make changes in this repository. Follow the exis
 
 - Preserve strict type checking. Prefer precise types, `unknown`, or a narrow union over `any`; do not use type assertions to silence an error without establishing why they are safe.
 - Use `import type` for imports used only as types.
-- The project uses native ESM. Include `.js` extensions in relative TypeScript imports when required by the existing module convention; use configured aliases for supported source imports.
+- The project uses native ESM. Preserve the existing TypeScript import style and configured aliases; the build runs `tsc-alias --resolve-full-paths` to rewrite aliases and add `.js` extensions to resolvable extensionless imports in emitted files.
 - Keep public interfaces and behavior stable unless the task requires a change. When changing them, update their callers and tests.
 
 ## Implementation and Error Handling

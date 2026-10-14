@@ -2,72 +2,68 @@
 
 ## Purpose
 
-This repository is an HTTP API. It composes an Express application with authentication routes set up. Better Auth handles authentication and uses PostgreSQL for persistence. The project builds to a native ESM Node.js application and includes unit and HTTP integration tests.
+This repository is a URL-shortening HTTP API. Express handles requests, PostgreSQL stores links, and Redis caches JSON responses.
 
 ## Tech Stack
 
 | Area | Technology | Role |
 | --- | --- | --- |
-| Runtime | Node.js 22+ | Runs the API; CI currently validates on Node.js 22. |
-| Language and modules | TypeScript 5+, ES2024, native ESM | Strictly typed application code and Node-compatible output. |
-| HTTP | Express 5 | Application composition, routing, and middleware. |
-| Authentication and persistence | Better Auth, PostgreSQL via `pg` | Authentication endpoints and their database connection. |
-| Request middleware | `cors`, `morgan`, `cookie-parser`, `express-validator` | Cross-origin configuration, request logging, cookie parsing, and validation support. |
-| Development and build | `tsx`, TypeScript, `tsc-alias` | Watch-mode development, compilation, and compiled alias rewriting. |
-| Tests | Jest 30, `ts-jest` | TypeScript unit and integration tests in Node.js. |
+| Runtime | Node.js 22+ | Runs the API as a native ESM application. |
+| Language and modules | TypeScript 5+, ES2024 | Strictly typed source compiled to ESM in `dist/`. |
+| HTTP | Express 5 | App composition, routing, middleware, and request handling. |
+| Persistence | PostgreSQL via `@prisma/orm-postgres` | Stores link URLs and their unique slugs using the generated contract. |
+| Cache | Redis | Stores JSON responses for 300 seconds. |
+| Validation | `express-validator`, Zod | Validates link requests and runtime environment variables. |
+| Build and development | TypeScript, `tsc-alias`, `tsx` | Compiles ESM, resolves emitted imports, and runs watch-mode development. |
+| Tests | Jest 30, `ts-jest` | Runs unit and HTTP integration tests. |
 
 ## System Overview
 
-The application is composed in `src/app.ts`: global middleware runs before the root endpoint and mounted routers, and the centralized error handler is registered last. `src/index.ts` starts the HTTP server. Authentication requests are delegated to Better Auth, which is configured with a PostgreSQL pool.
-
 ```mermaid
 flowchart LR
-    client[API client] --> app[Express app and global middleware]
-    app --> route[Requested routes]
-    route --> protect[Route protection middleware]
-    protect --> controller[Request specific execution]
-    app --> authRoute[Auth router]
-    authRoute --> betterAuth[Better Auth Node handler]
-    betterAuth --> postgres[(PostgreSQL)]
-    app --> errors[Central error handler]
+    client[API client] --> middleware[Express middleware and Redis response cache]
+    middleware --> routes[Link routes]
+    routes --> validation[Request validation]
+    validation --> handlers[Link handlers]
+    handlers --> postgres[(PostgreSQL)]
+    middleware --> redis[(Redis)]
 ```
 
 ## Core Layout
 
 | Path | Responsibility |
 | --- | --- |
-| `src/app.ts` | Composes the Express app, root timestamp endpoint, routers, and final error handler. |
+| `src/app.ts` | Adds cache middleware, mounts link routes, and registers the error handler. |
 | `src/index.ts` | Starts the HTTP server using the configured port. |
-| `src/config/` | Loads environment settings and configures the Express app and global middleware. |
-| `src/routes/` | Declares endpoints and connects middleware, controllers, or external handlers. |
-| `src/controllers/` | Implements request and response behavior. |
-| `src/middlewares/` | Implements reusable request processing, handler wrappers, and centralized error handling. |
-| `src/validators/` | Defines reusable `express-validator` chains and validation middleware. |
-| `src/lib/` | Configures integrations such as Better Auth and contains runtime assets such as `status.html`. |
-| `src/types/` | Declares shared Express types. Environment types are inferred from the Zod schema. |
-| `tests/unit/` | Tests individual controllers, middleware, and handlers. |
+| `src/config/` | Loads and validates environment variables and configures Express and Redis. |
+| `src/routes/` | Declares link endpoints and connects their middleware and controllers. |
+| `src/controllers/` | Creates links and redirects requests to saved destinations. |
+| `src/middlewares/` | Implements request validation flow, link lookup, caching, handler wrappers, and centralized errors. |
+| `src/validators/` | Defines URL and slug validation. |
+| `src/prisma/` | Defines the link contract and creates the PostgreSQL ORM client. |
+| `src/redis/` | Provides Redis cache read, write, and delete helpers. |
+| `src/lib/` | Contains shared utilities such as ID generation. |
+| `tests/unit/` | Tests individual handlers and middleware. |
 | `tests/integration/` | Tests the composed Express app over HTTP. |
 
 ## Request Lifecycle
 
-1. `src/config/app.config.ts` creates the Express app and registers CORS, Morgan request logging, cookie parsing, JSON parsing, and URL-encoded body parsing.
-2. `src/app.ts` registers the root endpoint, mounts `/system` and `/auth`, then registers the centralized error handler.
-3. `GET /system/health` passes through `protectSystem`, the controller wrapper, and `getStatus`, which serves `src/lib/status.html`.
-4. Requests under `/auth` are forwarded to Better Auth's Node handler. Better Auth uses the PostgreSQL pool configured in `src/lib/auth.ts`.
-5. Controller and middleware wrappers forward thrown or rejected errors with `next(error)`. The error handler logs the error and returns a generic 500 response; if response headers have already been sent, it delegates to Express.
+1. `src/config/env.config.ts` selects a dotenv file from the process `NODE_ENV`, then validates `NODE_ENV`, `PORT`, `DATABASE_URL`, and optional `REDIS_URI` with Zod.
+2. `src/config/app.config.ts` creates the Express app and registers CORS, Morgan request logging, cookie parsing, JSON parsing, and URL-encoded body parsing.
+3. `src/app.ts` applies the Redis cache middleware before mounting the link router, then registers the centralized error handler.
+4. `POST /` validates the submitted URL, reuses a slug if the URL already exists, or persists a new link and returns its Base62 slug.
+5. `GET /:slug` validates and looks up the slug, returns 404 when it is unknown, or redirects to an HTTPS destination assembled from the stored URL.
+6. The cache middleware keys responses by method, path, query, and body and stores JSON responses in Redis for 300 seconds. Redis connects during module initialization.
 
 ## Configuration and Build
 
-- `src/config/env.config.ts` selects the first existing environment file from the working directory, based on the `NODE_ENV` value already present in the process before dotenv loads it. Production aliases (`prod`, `production`) check `.env.prod` then `.env.production`; development aliases (`dev`, `development`, `local`) check `.env.dev`, `.env.development`, then `.env.local`; `test` checks `.env.test`. Each list then checks `.env`. If `NODE_ENV` is unset or unrecognized, only `.env` is checked; a `NODE_ENV` value inside an environment file cannot affect file selection. Existing process environment variables take precedence over values from the selected file, and Zod validates the complete runtime environment before export.
-- `NODE_ENV` is limited to `development`, `production`, or `test` and defaults to `development`; `PORT` is coerced to an integer and defaults to `3000` (the schema does not impose a port range).
-- `BETTER_AUTH_SECRET` and `AUTH_DB_URI` are required non-empty strings.
-- `CLIENT_ORIGINS` defaults to `http://localhost:3000`; the configuration accepts a comma-separated list (optionally enclosed in square brackets), trims each entry, and validates each as a URL before passing the resulting array to CORS.
-- `tsconfig.json` enables strict checking, targets ES2024, emits ESM to `dist/`, and defines aliases such as `@route/*` and `@middleware/*`.
-- `package.json` declares `"type": "module"`. `npm run build` compiles with `tsc`, rewrites aliases with `tsc-alias`, then copies runtime assets.
-- `npm run dev` runs `tsx watch src/index.ts`. `npm start` builds the project and starts `dist/src/index.js`.
+- `DATABASE_URL` is required and supplies the PostgreSQL ORM client. `REDIS_URI` is optional in the environment schema; ensure Redis is reachable because the client connects during startup.
+- `PORT` defaults to `3000`. `NODE_ENV` defaults to `development` and accepts `development`, `production`, or `test`.
+- The environment loader selects `.env.dev`, `.env.development`, or `.env.local` for development; `.env.prod` or `.env.production` for production; and `.env.test` for tests. Each list falls back to `.env`. Selection uses the process value before dotenv loads; if it is unset or unrecognized, only `.env` is checked.
+- `package.json` declares `"type": "module"`. `npm run build` runs `tsc` followed by `tsc-alias --resolve-full-paths`, which rewrites aliases and adds `.js` extensions to resolvable extensionless imports in emitted files. This makes the output compatible with native Node.js ESM resolution.
+- `npm run dev` runs `tsx watch src/index.ts`. `npm start` builds the app and starts `dist/src/index.js` with `NODE_ENV=production`.
 
 ## Tests and Delivery
 
-- Jest runs TypeScript tests in the Node environment using the ESM `ts-jest` preset. `jest.config.ts` maps source aliases for tests.
-- CI runs on pushes and pull requests. It installs dependencies with `npm ci`, then runs `npm run typecheck`, `npm test -- --runInBand`, and `npm run build` on Node.js 22.
-- CD runs on pushes to any branch or manual dispatch. It packages the compiled app and production dependencies as a GitHub Actions artifact retained for 14 days. This workflow does not deploy to a hosting provider.
+- Jest runs TypeScript tests in the Node environment using the ESM `ts-jest` preset.
+- Run `npm run typecheck`, `npm test -- --runInBand`, and `npm run build` to validate changes.

@@ -7,8 +7,8 @@
     "type": "module",
     "main": "dist/src/index.js",
     "scripts": {
-        "build": "tsc && tsc-alias",
-        "start": "cross-env NODE_ENV=production npm run build && node dist/src/index.js",
+        "build": "tsc && tsc-alias --resolve-full-paths",
+        "start": "npm run build && cross-env NODE_ENV=production node dist/src/index.js",
         "dev": "cross-env NODE_ENV=development tsx watch src/index.ts",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
         "typecheck": "tsc --noEmit",

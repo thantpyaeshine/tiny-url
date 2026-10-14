@@ -1,25 +1,26 @@
 import redis from '@config/redis';
 
-export async function getCache<T>(key: string): Promise<JSON | null> {
+export const getCache = async (key: string): Promise<{ status: number, data: any } | null> => {
     const value = await redis.get(key);
 
     if (value === null) {
         return null;
     }
 
-    return JSON.parse(value);
-}
+    const { status, data } = JSON.parse(value);
+    return { status, data };
+};
 
-export async function setCache<T>(
+export const setCache = async (
     key: string,
-    value: T,
+    value: { status: number, data: any },
     ttlSeconds = 300,
-): Promise<void> {
+): Promise<void> => {
     await redis.set(key, JSON.stringify(value), {
         EX: ttlSeconds,
     });
-}
+};
 
-export async function deleteCache(key: string): Promise<void> {
+export const deleteCache = async (key: string): Promise<void> => {
     await redis.del(key);
-}
+};

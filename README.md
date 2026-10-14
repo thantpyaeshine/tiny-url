@@ -1,68 +1,82 @@
-# Express API
+# Tiny URL
 
-A TypeScript and Express 5 API starter with environment-based configuration, CORS, request logging, cookie and body parsing, validation helpers, and Better Auth integration backed by PostgreSQL.
+A TypeScript and Express API for creating short links and redirecting visitors to their destinations. PostgreSQL stores links, and Redis caches JSON responses.
 
 ## Requirements
 
 - Node.js 22 or newer
 - npm
-- PostgreSQL for Better Auth data
+- PostgreSQL 15 or newer
+- A Redis service available to the application
 
 ## Getting Started
 
-Install dependencies and start the development server:
+Install dependencies, configure the database and Redis, then start the development server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-The server listens on port `3000` by default. Set `PORT` to override it. The `dev` script uses `tsx watch`, so TypeScript changes restart the server automatically.
-
-## Configuration
-
-At startup, `src/config/env.config.ts` selects the first existing environment file from the working directory. The selection uses the `NODE_ENV` value already present in the process before dotenv loads: `prod`/`production` checks `.env.prod`, then `.env.production`; `dev`/`development`/`local` checks `.env.dev`, then `.env.development`, then `.env.local`; and `test` checks `.env.test`. Each sequence then falls back to `.env`. If `NODE_ENV` is unset or unrecognized, only `.env` is checked. Set `NODE_ENV=development` in the process environment to select `.env.development`; setting it only inside that file does not affect which file is selected. Existing process environment variables take precedence over values loaded from the selected file.
-
-For local development, create `.env` in the project root, or set `NODE_ENV=development` before starting the app and create `.env.development`:
+Create a `.env` file in the project root:
 
 ```env
 PORT=3000
-CLIENT_ORIGINS=http://localhost:5173
-AUTH_DB_URI=postgresql://user:password@localhost:5432/database
-BETTER_AUTH_SECRET=replace-with-a-long-random-secret
-DATABASE_URL=postgresql://prisma.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
-DATABASE_DIRECT_URL=postgresql://prisma.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres:password@localhost:5432/tiny_url
+REDIS_URI=redis://localhost:6379
 ```
+
+`DATABASE_URL` is required. `REDIS_URI` is optional in environment validation, but the application connects to Redis during startup, so a reachable Redis service is needed. The server listens on port `3000` by default; set `PORT` to override it.
+
+## Configuration
+
+The environment loader selects a file using the `NODE_ENV` value already present in the process before dotenv loads:
+
+- `development` checks `.env.dev`, `.env.development`, `.env.local`, then `.env`.
+- `production` checks `.env.prod`, `.env.production`, then `.env`.
+- `test` checks `.env.test`, then `.env`.
+- If `NODE_ENV` is unset or unrecognized, only `.env` is checked. The validated runtime value defaults to `development`.
+
+Existing process environment variables take precedence over values loaded from the selected file.
 
 | Variable | Required | Default / validation | Purpose |
 | --- | --- | --- | --- |
-| `NODE_ENV` | No | `development`; allowed values are `development`, `production`, and `test` | Selects the runtime mode and, when `.env` is absent, the environment file to load. |
+| `NODE_ENV` | No | `development`; allowed values are `development`, `production`, and `test` | Selects the runtime mode and environment file. |
 | `PORT` | No | `3000`; coerced to an integer | HTTP server port. |
-| `BETTER_AUTH_SECRET` | Yes | Must be a non-empty string | Secret used by Better Auth. |
-| `AUTH_DB_URI` | Yes | Must be a non-empty string | PostgreSQL connection string used by authentication. |
-| `DATABASE_URL` | Yes | Must be a non-empty string | Prisma runtime connection string. For Supabase, use the transaction pooler URL (`:6543`) and append `?pgbouncer=true`. |
-| `DATABASE_DIRECT_URL` | Yes | Must be a non-empty string | Prisma CLI connection string for migrations/introspection. For Supabase, use session pooler (`:5432`) or a direct DB host URL. |
-| `CLIENT_ORIGINS` | No | `http://localhost:3000`; each parsed entry must be a URL | Allowed CORS origins. Use a comma-separated list, for example `http://localhost:5173,https://app.example.com`. Square brackets around the list are also accepted. |
+| `DATABASE_URL` | Yes | Must be a non-empty string | PostgreSQL connection string used by the Prisma ORM client. |
+| `REDIS_URI` | No | No schema default | Redis connection URL used by response caching. |
 
-The environment is parsed and validated at startup. `CLIENT_ORIGINS` is transformed into an array of origins before it is passed to the credentialed CORS middleware. Do not commit real credentials or secrets.
+Do not commit real credentials or secrets.
 
-## API Routes
+## API
 
-### `GET /`
+### `POST /`
 
-Returns a JSON object containing the current server timestamp.
+Creates a short link. The request body must contain a valid URL:
 
-### `GET /system/health`
+```json
+{
+  "url": "https://example.com"
+}
+```
 
-Serves the status page from `src/lib/status.html`. It currently passes through a placeholder middleware that calls `next()` and does not enforce access control, then the shared controller error handler.
+Returns `201` with the generated slug:
 
-### `/auth/*`
+```json
+{
+  "slug": "..."
+}
+```
 
-All routes under `/auth` are forwarded to Better Auth. Email/password authentication is enabled, with the two-factor and JWT plugins configured. Better Auth uses the configured PostgreSQL database and trusts the configured client origin.
+If the URL is already stored, the existing slug is returned.
 
-## Middleware
+### `GET /:slug`
 
-The Express app enables credentialed CORS, Morgan request logging (`dev` outside production and `combined` in production), cookie parsing, JSON body parsing, and URL-encoded body parsing. Reusable `express-validator` helpers are available, but the current routes do not attach validation rules.
+Looks up the slug and redirects to its HTTPS destination. If no link exists for the slug, the API returns `404`.
+
+## Caching
+
+The cache middleware runs before the link routes. It keys cached JSON responses by request method, path, query, and body, and stores them in Redis for 300 seconds. Redis must be reachable when the application starts.
 
 ## Project Structure
 
@@ -70,47 +84,36 @@ The Express app enables credentialed CORS, Morgan request logging (`dev` outside
 src/
   app.ts                   Express app setup and route registration
   index.ts                 HTTP server entry point
-  config/                  Environment loading and Express app configuration
-  routes/                  Express route registration
-  controllers/             Request handlers
-  middlewares/             Reusable middleware and centralized error handling
-  validators/              Reusable express-validator chains and middleware
-  types/                   Shared Express type declarations
-  lib/                     Better Auth configuration and health page asset
-scripts/copy-assets.mjs    Copy runtime assets during build
-tests/                     Jest unit and integration tests
+  config/                  Environment, Redis, and Express app configuration
+  controllers/             Link creation and redirect handlers
+  lib/                     Shared utilities
+  middlewares/             Cache, link, error, and handler middleware
+  prisma/                  PostgreSQL ORM client and contract
+  redis/                   Redis cache helpers
+  routes/                  Link route registration
+  types/                   Shared Express types
+  validators/              Request validation
+tests/
+  unit/                    Unit tests
+  integration/             HTTP integration tests
 ```
 
 ## Scripts
 
 ```bash
 npm run dev        # Start the watch-mode development server
-npm run build      # Compile TypeScript and copy runtime library files
-npm start          # Build and run the compiled application
+npm run build      # Compile TypeScript and resolve imports for native ESM
+npm start          # Build and run the production application
 npm test           # Run Jest tests
 npm run typecheck  # Check types without emitting files
 ```
 
-## GitHub Actions
-
-- **CI** runs on pull requests and pushes to `main`. It installs dependencies with `npm ci`, then runs typechecking, unit tests, and the production build.
-- **CD** runs on pushes to any branch or manually from the Actions tab. It packages the compiled application with production dependencies and publishes it as a 14-day GitHub Actions artifact named after the commit SHA.
-
-The CD workflow creates a deployable package but does not deploy to a cloud provider. Add a deployment step for the hosting platform and configure its credentials as GitHub Actions secrets when a deployment target is selected.
+The build runs `tsc` followed by `tsc-alias --resolve-full-paths`. This rewrites configured aliases and adds `.js` extensions to resolvable extensionless imports in the emitted files, as required by native Node.js ESM.
 
 Run the checks before submitting changes:
 
 ```bash
 npm run typecheck
-npm test
+npm test -- --runInBand
+npm run build
 ```
-
-## Adding Features
-
-1. Add or update a controller in `src/controllers`.
-2. Add route registration in `src/routes`.
-3. Put reusable request logic in `src/middlewares` and validation rules in `src/validators`.
-4. Mount new routers from `src/app.ts`.
-5. Add focused tests under `tests`.
-
-The project uses native ESM. Local TypeScript imports therefore include the `.js` extension, matching the compiled output expected by Node.js.
