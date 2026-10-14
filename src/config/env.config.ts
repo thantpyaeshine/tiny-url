@@ -26,6 +26,8 @@ const envSchema = z.object({
 
     PORT: z.coerce.number().int().default(3000),
 
+    REDIS_URI: z.string().min(1, 'REDIS_URI is required'),
+
     DATABASE_URL: z
         .string()
         .min(1, 'DATABASE_URL is required'),

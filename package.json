@@ -24,6 +24,7 @@
         "express-validator": "^7.3.2",
         "morgan": "^1.12.1",
         "pg": "^8.23.1",
+        "redis": "^6.3.0",
         "zod": "^4.6.5"
     },
     "devDependencies": {
