@@ -18,7 +18,7 @@ export const createLink: Controller = async (req, res) => {
         slug,
     });
 
-    res.json({ slug });
+    res.status(201).json({ slug });
 };
 
 export const fetchLink: Controller = async (req, res) => {

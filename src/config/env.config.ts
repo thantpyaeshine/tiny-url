@@ -26,21 +26,6 @@ const envSchema = z.object({
 
     PORT: z.coerce.number().int().default(3000),
 
-    BETTER_AUTH_SECRET: z.string().min(1, 'BETTER_AUTH_SECRET is required'),
-
-    AUTH_DB_URI: z.string().min(1, 'AUTH_DB_URI is required'),
-
-    CLIENT_ORIGINS: z
-        .string()
-        .default('[http://localhost:3000]')
-        .transform((value) =>
-            value
-                .replace(/^\[|\]$/g, '')
-                .split(',')
-                .map((origin) => origin.trim()),
-        )
-        .pipe(z.array(z.url())),
-
     DATABASE_URL: z
         .string()
         .min(1, 'DATABASE_URL is required'),

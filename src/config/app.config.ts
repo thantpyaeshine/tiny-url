@@ -4,13 +4,12 @@ import express from 'express';
 import morgan from 'morgan';
 import ENV from '@config/env';
 
-const { CLIENT_ORIGINS, NODE_ENV } = ENV;
+const { NODE_ENV } = ENV;
 
 const app = express();
 
 app.use(
     cors({
-        origin: CLIENT_ORIGINS,
         credentials: true,
     })
 );

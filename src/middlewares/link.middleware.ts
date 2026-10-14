@@ -16,7 +16,7 @@ export const protectCreateLink: Middleware = handle(
         }).first();
 
         if (link) {
-            return res.json({ slug: link.slug });
+            return res.status(201).json({ slug: link.slug });
         }
 
         req.url = url;
