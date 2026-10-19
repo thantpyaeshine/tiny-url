@@ -2,32 +2,32 @@ import { config } from 'dotenv';
 import { existsSync } from 'node:fs';
 import { z } from 'zod';
 
-const envs = {
-    production: ['prod', 'production'],
-    development: ['dev', 'development', 'local'],
-    test: ['test'],
-} as const satisfies Record<string, readonly string[]>;
+// const envs = {
+//     production: ['prod', 'production'],
+//     development: ['dev', 'development', 'local'],
+//     test: ['test'],
+// } as const satisfies Record<string, readonly string[]>;
 
 
-const path = (
-    [
-        ...(envs[(process.env.NODE_ENV || 'development') as keyof typeof envs] ?? []),
-        '',
-    ]
-        .map((name) => (name ? `.env.${name}` : '.env'))
-        .find((filePath) => existsSync(filePath)) ?? '.env'
-);
+// const path = (
+//     [
+//         ...(envs[(process.env.NODE_ENV || 'development') as keyof typeof envs] ?? []),
+//         '',
+//     ]
+//         .map((name) => (name ? `.env.${name}` : '.env'))
+//         .find((filePath) => existsSync(filePath)) ?? '.env'
+// );
 
-config({
-    path,
-});
+config();
 
 const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
     PORT: z.coerce.number().int().default(3000),
 
-    REDIS_URL: z.string().min(1, 'REDIS_URI is required').optional(),
+    HOST: z.string().min(1, 'HOST is required').default('0.0.0.0'),
+
+    REDIS_URL: z.string().min(1, 'REDIS_URI is required').default('redis://localhost:6379'),
 
     DATABASE_URL: z
         .string()

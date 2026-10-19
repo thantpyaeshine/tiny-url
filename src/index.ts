@@ -1,10 +1,10 @@
 import app from '@/app';
 import ENV from '@config/env';
 
-const { PORT } = ENV;
+const { PORT, HOST } = ENV;
 
 try {
-    app.listen(PORT, () => {
+    app.listen(PORT, HOST, () => {
         console.log(`Server is listening on port:${PORT}`);
     });
 } catch (err) {

@@ -23,10 +23,21 @@ Create a `.env` file in the project root:
 ```env
 PORT=3000
 DATABASE_URL=postgresql://postgres:password@localhost:5432/tiny_url
-REDIS_URI=redis://localhost:6379
+REDIS_URL=redis://localhost:6379
 ```
 
-`DATABASE_URL` is required. `REDIS_URI` is optional in environment validation, but the application connects to Redis during startup, so a reachable Redis service is needed. The server listens on port `3000` by default; set `PORT` to override it.
+`DATABASE_URL` is required. `REDIS_URL` is optional in environment validation, but the application connects to Redis during startup, so a reachable Redis service is needed. The server listens on port `3000` by default; set `PORT` to override it.
+
+## Docker
+
+Build the production image and run it with PostgreSQL and Redis connection URLs supplied through the environment:
+
+```bash
+docker build -t tiny-url .
+docker run --rm -p 3000:3000 --env DATABASE_URL --env REDIS_URL tiny-url
+```
+
+Set `DATABASE_URL` and `REDIS_URL` in the host environment before running the container. Both services must be reachable from the container; when they run in other containers, connect them to the same Docker network and use their service names as hostnames.
 
 ## Configuration
 
@@ -44,7 +55,7 @@ Existing process environment variables take precedence over values loaded from t
 | `NODE_ENV` | No | `development`; allowed values are `development`, `production`, and `test` | Selects the runtime mode and environment file. |
 | `PORT` | No | `3000`; coerced to an integer | HTTP server port. |
 | `DATABASE_URL` | Yes | Must be a non-empty string | PostgreSQL connection string used by the Prisma ORM client. |
-| `REDIS_URI` | No | No schema default | Redis connection URL used by response caching. |
+| `REDIS_URL` | No | No schema default | Redis connection URL used by response caching. |
 
 Do not commit real credentials or secrets.
 
