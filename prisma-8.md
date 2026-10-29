@@ -1,4 +1,4 @@
-# Welcome to Prisma ORM!
+# Welcome to Prisma ORM
 
 Prisma ORM lets you query your database in simple, easy-to-read TypeScript. Define what your data looks like, and Prisma ORM gives you a fully typed client — with autocomplete for every table, column, and relation.
 
@@ -16,34 +16,39 @@ Your data contract is the heart of your application. It lives at [`src/prisma/co
 ```typescript
 import { defineContract } from '@prisma/orm-postgres/contract-builder';
 
-export const contract = defineContract(
-  {},
-  ({ field, model }) => ({
+export const contract = defineContract({}, ({ field, model, type }) => ({
     models: {
-      User: model('User', {
+      Link: model('Link', {
         fields: {
-          id: field.id.uuidv7String(),
-          email: field.text().unique(),
-          username: field.text().optional(),
-          name: field.text().optional(),
+          id: field.column(type.Int()).id(),
+          url: field.column(type.String()),
+          slug: field.column(type.String()).optional(),
         },
       }),
     },
-  }),
-);
+  }));
 ```
 
-Every model you define in your contract can be queried from your app. Your editor will autocomplete the query methods and show you what type each model field is:
+The contract currently describes the PostgreSQL table `public."Link"`:
+
+| Column | PostgreSQL type | Nullability | Constraint |
+| --- | --- | --- | --- |
+| `id` | `integer` | `NOT NULL` | Primary key; supplied by the application, with no database default |
+| `url` | `text` | `NOT NULL` | None |
+| `slug` | `text` | `NULL` | None |
+
+There are no unique constraints or indexes in this contract. The application derives a Base62 slug from the ID and saves it after creating the link.
+
+Every model you define in your contract can be queried from your app. The runtime exports the `Link` model handle, and your editor infers the fields:
 
 ```typescript
-import { db } from './src/prisma/db';
+import { Link } from './src/prisma/db';
 
-const user = await db.orm.public.User
-  .where({ email: 'alice@example.com' })
+const link = await Link
+  .where({ url: 'example.com' })
   .first();
 
-// Your editor will show the type of user as
-// { id: number; email: string; username: string | null; name: string | null; createdAt: Date; posts: Post[] } | null
+// link is { id: number; url: string; slug: string | null } | null
 ```
 
 Your contract has two companion files in the same directory:
@@ -95,7 +100,7 @@ npx prisma migration status    # Show migration status
 ### Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | [`src/prisma/contract.ts`](src/prisma/contract.ts) | Your data contract — define your models here |
 | [`prisma.config.ts`](prisma.config.ts) | CLI configuration |
 | [`src/prisma/db.ts`](src/prisma/db.ts) | Database client — `import { db } from './src/prisma/db'` |

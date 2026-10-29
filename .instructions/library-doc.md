@@ -6,7 +6,7 @@ Keep this guide aligned with the direct dependencies declared in the root `packa
 
 | Package | Declared version | Project use |
 | --- | --- | --- |
-| `@prisma/orm-postgres` | `^8.0.0-rc.17` | PostgreSQL contract builder and runtime ORM client in `src/prisma/`. |
+| `@prisma/orm-postgres` | `^8.0.0-rc.21` | PostgreSQL contract builder and runtime ORM client in `src/prisma/`. |
 | `base62` | `^2.0.2` | Encodes persisted link IDs as URL slugs in `src/controllers/link.controller.ts`. |
 | `cookie-parser` | `^1.4.7` | Parses request cookies in `src/config/app.config.ts`. |
 | `cors` | `^2.8.6` | Configures cross-origin request handling in `src/config/app.config.ts`. |
@@ -22,7 +22,7 @@ Keep this guide aligned with the direct dependencies declared in the root `packa
 
 | Package | Declared version | Project use |
 | --- | --- | --- |
-| `@prisma/cli-engine` | `^0.7.0` | Prisma CLI tooling used by the contract workflow. |
+| `@prisma/cli-engine` | `^0.9.0` | Prisma CLI tooling used by the contract workflow. |
 | `@types/cookie-parser` | `^1.4.10` | Cookie-parser type definitions. |
 | `@types/cors` | `^2.8.19` | CORS type definitions. |
 | `@types/express` | `^5.0.6` | Express type definitions. |
@@ -31,7 +31,7 @@ Keep this guide aligned with the direct dependencies declared in the root `packa
 | `add` | `^2.0.9` | Declared development utility; not used by the application build scripts. |
 | `cross-env` | `^10.1.0` | Sets `NODE_ENV` portably in the `start` and `dev` scripts. |
 | `jest` | `^30.2.0` | Test runner invoked by the `test` script. |
-| `prisma` | `^8.0.0-rc.22` | Prisma CLI used by `contract:emit`. |
+| `prisma` | `^8.0.0-rc.28` | Prisma CLI used by `contract:emit`. |
 | `ts-jest` | `^29.1.2` | Transforms TypeScript tests with the ESM preset. |
 | `tsc-alias` | `^1.9.7` | Rewrites emitted aliases and resolves extensionless imports for native ESM during `npm run build`. |
 | `tsx` | `^4.23.15` | Runs and watches `src/index.ts` during development. |
