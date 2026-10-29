@@ -1,20 +1,15 @@
-import { autoincrement, defineContract } from '@prisma/orm-postgres/contract-builder';
+import { defineContract } from '@prisma/orm-postgres/contract-builder';
 
-export const contract = defineContract({}, ({ field, model, rel }) => {
-
-    const Link = model('Link', {
-        fields: {
-            id: field.int().id().default(autoincrement()),
-            url: field.text(),
-            slug: field.text().unique().optional(),
-            createdAt: field.temporal.createdAtString(),
-            updatedAt: field.temporal.updatedAtString(),
-        },
-    });
-
+export const contract = defineContract({}, ({ field, model, type }) => {
     return {
         models: {
-            Link,
+            Link: model('Link', {
+                fields: {
+                    id: field.column(type.Int()).id(),
+                    url: field.column(type.String()),
+                    slug: field.column(type.String()).optional(),
+                },
+            }),
         },
     };
 });

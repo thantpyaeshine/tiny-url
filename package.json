@@ -15,7 +15,7 @@
         "contract:emit": "prisma contract emit"
     },
     "dependencies": {
-        "@prisma/orm-postgres": "^8.0.0-rc.17",
+        "@prisma/orm-postgres": "^8.0.0-rc.21",
         "base62": "^2.0.2",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.6",
@@ -28,7 +28,7 @@
         "zod": "^4.6.5"
     },
     "devDependencies": {
-        "@prisma/cli-engine": "^0.7.0",
+        "@prisma/cli-engine": "^0.9.0",
         "@types/cookie-parser": "^1.4.10",
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
@@ -37,7 +37,7 @@
         "add": "^2.0.9",
         "cross-env": "^10.1.0",
         "jest": "^30.2.0",
-        "prisma": "^8.0.0-rc.22",
+        "prisma": "^8.0.0-rc.28",
         "ts-jest": "^29.1.2",
         "tsc-alias": "^1.9.7",
         "tsx": "^4.23.15",
@@ -50,6 +50,8 @@
         "@parcel/watcher@2.6.0": true,
         "esbuild@0.28.2": true,
         "unrs-resolver@1.12.2": true,
-        "workerd@1.20260901.1": true
+        "workerd@1.20260901.1": true,
+        "msgpackr-extract@3.0.4": true,
+        "workerd@1.20260704.1": true
     }
 }

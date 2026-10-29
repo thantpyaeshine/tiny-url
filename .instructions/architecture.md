@@ -11,7 +11,7 @@ This repository is a URL-shortening HTTP API. Express handles requests, PostgreS
 | Runtime | Node.js 22+ | Runs the API as a native ESM application. |
 | Language and modules | TypeScript 5+, ES2024 | Strictly typed source compiled to ESM in `dist/`. |
 | HTTP | Express 5 | App composition, routing, middleware, and request handling. |
-| Persistence | PostgreSQL via `@prisma/orm-postgres` | Stores link URLs and their unique slugs using the generated contract. |
+| Persistence | PostgreSQL via `@prisma/orm-postgres` | Stores links using the generated Prisma contract. |
 | Cache | Redis | Stores JSON responses for 300 seconds. |
 | Validation | `express-validator`, Zod | Validates link requests and runtime environment variables. |
 | Build and development | TypeScript, `tsc-alias`, `tsx` | Compiles ESM, resolves emitted imports, and runs watch-mode development. |
@@ -45,6 +45,18 @@ flowchart LR
 | `src/lib/` | Contains shared utilities such as ID generation. |
 | `tests/unit/` | Tests individual handlers and middleware. |
 | `tests/integration/` | Tests the composed Express app over HTTP. |
+
+## Database Schema
+
+The generated contract maps the `Link` model to `public."Link"`:
+
+| Column | PostgreSQL type | Nullability | Constraint |
+| --- | --- | --- | --- |
+| `id` | `integer` | `NOT NULL` | Primary key; supplied by the application, with no database default |
+| `url` | `text` | `NOT NULL` | None |
+| `slug` | `text` | `NULL` | None |
+
+The contract currently declares no unique indexes or foreign keys. The application derives a Base62 slug from the supplied ID and stores it after creating the row.
 
 ## Request Lifecycle
 

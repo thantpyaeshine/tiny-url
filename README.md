@@ -59,6 +59,18 @@ Existing process environment variables take precedence over values loaded from t
 
 Do not commit real credentials or secrets.
 
+## Database Schema
+
+Prisma defines the PostgreSQL table `public."Link"` in `src/prisma/contract.ts`:
+
+| Column | Type | Nullability | Constraint |
+| --- | --- | --- | --- |
+| `id` | `integer` | `NOT NULL` | Primary key; supplied by the application |
+| `url` | `text` | `NOT NULL` | None |
+| `slug` | `text` | `NULL` | None |
+
+The contract currently declares no unique indexes or database defaults. The application creates the ID, derives a Base62 slug from it, then stores that slug on the link.
+
 ## API
 
 ### `POST /`
