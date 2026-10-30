@@ -7,4 +7,5 @@ migrations
 .vscode
 .env*
 .env.*
+!.env
 npm-debug.log*
